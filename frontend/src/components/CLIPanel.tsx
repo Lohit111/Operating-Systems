@@ -5,6 +5,7 @@ interface Props {
   onNavigate: (folder: string) => void;
   onDeleteFile: (filename: string) => Promise<void>;
   onAddFile: (filename: string, path: string, size: number) => Promise<void>;
+  onMkdir: (folder: string) => void;
 }
 
 interface LogEntry {
@@ -17,6 +18,7 @@ export default function CLIPanel({
   onNavigate,
   onDeleteFile,
   onAddFile,
+  onMkdir,
 }: Props) {
   const [input, setInput] = useState("");
   const [log, setLog] = useState<LogEntry[]>([
@@ -42,7 +44,7 @@ export default function CLIPanel({
 
     if (trimmed === "help") {
       addLog(
-        "Commands: open <folder> | del <filename> | touch <filename> [size]",
+        "Commands: open <folder> | mkdir <folder> | del <filename> | touch <filename> [size]",
         "info",
       );
       return;
@@ -51,7 +53,7 @@ export default function CLIPanel({
     const cmd = parseCommand(trimmed);
     if (!cmd) {
       addLog(
-        "Unknown command. Valid commands: open <folder>, del <filename>, touch <filename> [size]",
+        "Unknown command. Valid commands: open <folder>, mkdir <folder>, del <filename>, touch <filename> [size]",
         "error",
       );
       return;
@@ -60,7 +62,10 @@ export default function CLIPanel({
     try {
       if (cmd.type === "open") {
         onNavigate(cmd.folder);
-        addLog(`Navigated to ${cmd.folder}`, "success");
+        addLog(`Navigated to /${cmd.folder}`, "success");
+      } else if (cmd.type === "mkdir") {
+        onMkdir(cmd.folder);
+        addLog(`Created folder /${cmd.folder}`, "success");
       } else if (cmd.type === "del") {
         await onDeleteFile(cmd.filename);
         addLog(`Deleted ${cmd.filename}`, "success");
@@ -124,7 +129,7 @@ export default function CLIPanel({
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="open <folder> | del <file> | touch <file>"
+          placeholder="open <folder> | mkdir <folder> | del <file> | touch <file>"
           style={{
             flex: 1,
             background: "transparent",

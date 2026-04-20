@@ -17,6 +17,7 @@ export default function Dashboard({ uid, email, initialLastHead }: Props) {
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [lastHead, setLastHead] = useState(initialLastHead);
   const [currentPath, setCurrentPath] = useState("/");
+  const [folders, setFolders] = useState<Set<string>>(new Set());
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(
     new Set(),
   );
@@ -50,11 +51,14 @@ export default function Dashboard({ uid, email, initialLastHead }: Props) {
         setError("Storage quota exceeded. Delete some files to free space.");
         throw new Error("Storage quota exceeded");
       }
+      // Build the stored path: currentPath/filename (strip leading slash for storage)
+      const storedPath =
+        currentPath === "/" ? filename : `${currentPath.slice(1)}/${filename}`;
       try {
         const newFile = await createFile({
           uid,
           filename,
-          path,
+          path: path !== filename ? path : storedPath,
           size,
           start: allocation.start,
           end: allocation.end,
@@ -67,7 +71,7 @@ export default function Dashboard({ uid, email, initialLastHead }: Props) {
         throw err;
       }
     },
-    [files, uid],
+    [files, uid, currentPath],
   );
 
   const handleDeleteFile = useCallback(
@@ -114,8 +118,33 @@ export default function Dashboard({ uid, email, initialLastHead }: Props) {
     });
   }, []);
 
-  const handleNavigate = useCallback((folder: string) => {
-    setCurrentPath(folder.startsWith("/") ? folder : `/${folder}`);
+  // When files load, reconstruct any folder paths that were previously used
+  useEffect(() => {
+    if (files.length > 0) {
+      const derived = new Set<string>();
+      files.forEach((f) => {
+        const parts = f.path.split("/");
+        // path is stored as "folder/filename" or just "filename"
+        for (let i = 1; i < parts.length; i++) {
+          derived.add("/" + parts.slice(0, i).join("/"));
+        }
+      });
+      if (derived.size > 0)
+        setFolders((prev) => new Set([...prev, ...derived]));
+    }
+  }, [files]);
+
+  const handleMkdir = useCallback((folderPath: string) => {
+    const normalised = folderPath.startsWith("/")
+      ? folderPath
+      : `/${folderPath}`;
+    setFolders((prev) => new Set([...prev, normalised]));
+    // Navigate into the new folder
+    setCurrentPath(normalised);
+  }, []);
+
+  const handleNavigate = useCallback((path: string) => {
+    setCurrentPath(path.startsWith("/") ? path : `/${path}`);
   }, []);
 
   const panelStyle = {
@@ -206,6 +235,7 @@ export default function Dashboard({ uid, email, initialLastHead }: Props) {
           <div style={labelStyle}>File Explorer</div>
           <FileTree
             files={files}
+            folders={folders}
             currentPath={currentPath}
             selectedFileIds={selectedFileIds}
             isLoading={isLoading}
@@ -213,6 +243,7 @@ export default function Dashboard({ uid, email, initialLastHead }: Props) {
             onDeleteFile={handleDeleteFile}
             onSelectFile={handleSelectFile}
             onNavigate={handleNavigate}
+            onMkdir={handleMkdir}
           />
         </div>
 
@@ -223,6 +254,7 @@ export default function Dashboard({ uid, email, initialLastHead }: Props) {
             onNavigate={handleNavigate}
             onDeleteFile={handleDeleteFile}
             onAddFile={handleAddFile}
+            onMkdir={handleMkdir}
           />
         </div>
 
