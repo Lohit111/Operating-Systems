@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: connect to the database
-    from backend.database import connect_db, disconnect_db
+    from database import connect_db, disconnect_db
     await connect_db()
     yield
     # Shutdown: disconnect from the database
@@ -24,14 +24,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from backend.routers.auth_router import router as auth_router
+from routers.auth_router import router as auth_router
 
 app.include_router(auth_router)
 
-from backend.routers.user_router import router as user_router
+from routers.user_router import router as user_router
 app.include_router(user_router)
 
-from backend.routers.file_router import router as file_router
+from routers.file_router import router as file_router
 app.include_router(file_router)
 
 
@@ -43,3 +43,12 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",   # replace 'main' with your filename (without .py)
+        host="0.0.0.0",
+        port=8000,
+        reload=True   # remove in production
+    )

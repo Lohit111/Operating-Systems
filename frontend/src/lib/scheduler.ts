@@ -103,3 +103,128 @@ export function runSCAN(
     finalHead: sequence[sequence.length - 1],
   };
 }
+
+/**
+ * LOOK: like SCAN but only goes as far as the last request in each direction
+ * (doesn't travel to the disk boundary).
+ */
+export function runLOOK(
+  positions: number[],
+  initialHead: number
+): SchedulerResult {
+  if (positions.length === 0) {
+    return { sequence: [], seekDistance: 0, finalHead: initialHead };
+  }
+
+  const above = positions.filter((p) => p >= initialHead).sort((a, b) => a - b);
+  const below = positions.filter((p) => p < initialHead).sort((a, b) => b - a);
+
+  // Go up to last request above, then come back down
+  const sequence = [...above, ...below];
+
+  let seekDistance = 0;
+  let currentHead = initialHead;
+
+  for (const pos of above) {
+    seekDistance += Math.abs(pos - currentHead);
+    currentHead = pos;
+  }
+  for (const pos of below) {
+    seekDistance += Math.abs(pos - currentHead);
+    currentHead = pos;
+  }
+
+  return {
+    sequence,
+    seekDistance,
+    finalHead: sequence[sequence.length - 1],
+  };
+}
+
+/**
+ * C-SCAN (Circular SCAN): moves in one direction servicing requests,
+ * jumps back to the start (byte 0) without servicing on the return,
+ * then continues in the same direction.
+ */
+export function runCSCAN(
+  positions: number[],
+  initialHead: number,
+  maxByte: number
+): SchedulerResult {
+  if (positions.length === 0) {
+    return { sequence: [], seekDistance: 0, finalHead: initialHead };
+  }
+
+  const above = positions.filter((p) => p >= initialHead).sort((a, b) => a - b);
+  const below = positions.filter((p) => p < initialHead).sort((a, b) => a - b);
+
+  // Service above first, then jump to 0 and service below
+  const sequence = [...above, ...below];
+
+  let seekDistance = 0;
+  let currentHead = initialHead;
+
+  for (const pos of above) {
+    seekDistance += Math.abs(pos - currentHead);
+    currentHead = pos;
+  }
+  if (below.length > 0) {
+    // Go to end boundary, jump to 0, then service below
+    seekDistance += Math.abs(maxByte - currentHead); // to end
+    seekDistance += maxByte;                          // jump from end to 0
+    currentHead = 0;
+    for (const pos of below) {
+      seekDistance += Math.abs(pos - currentHead);
+      currentHead = pos;
+    }
+  }
+
+  return {
+    sequence,
+    seekDistance,
+    finalHead: sequence[sequence.length - 1],
+  };
+}
+
+/**
+ * C-LOOK (Circular LOOK): like C-SCAN but only goes as far as the last
+ * request in the upward direction, then jumps directly to the lowest
+ * remaining request (no travel to disk boundaries).
+ */
+export function runCLOOK(
+  positions: number[],
+  initialHead: number
+): SchedulerResult {
+  if (positions.length === 0) {
+    return { sequence: [], seekDistance: 0, finalHead: initialHead };
+  }
+
+  const above = positions.filter((p) => p >= initialHead).sort((a, b) => a - b);
+  const below = positions.filter((p) => p < initialHead).sort((a, b) => a - b);
+
+  // Service above first, jump to lowest below, then service below
+  const sequence = [...above, ...below];
+
+  let seekDistance = 0;
+  let currentHead = initialHead;
+
+  for (const pos of above) {
+    seekDistance += Math.abs(pos - currentHead);
+    currentHead = pos;
+  }
+  if (below.length > 0) {
+    // Jump directly to the lowest request (no boundary travel)
+    seekDistance += Math.abs(below[0] - currentHead);
+    currentHead = below[0];
+    for (let i = 1; i < below.length; i++) {
+      seekDistance += Math.abs(below[i] - currentHead);
+      currentHead = below[i];
+    }
+  }
+
+  return {
+    sequence,
+    seekDistance,
+    finalHead: sequence[sequence.length - 1],
+  };
+}

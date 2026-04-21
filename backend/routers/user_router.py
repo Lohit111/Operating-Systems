@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
-from backend.database import get_users_collection
-from backend.models import UserResponse
+from database import get_users_collection
+from models import UserResponse
 
 router = APIRouter()
 

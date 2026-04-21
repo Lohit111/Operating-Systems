@@ -5,10 +5,10 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Query
 from pymongo.errors import DuplicateKeyError
 
-from backend.database import get_files_collection, get_users_collection
-from backend.models import DeleteFileResponse, FileCreateRequest, FileRecord
+from database import get_files_collection, get_users_collection
+from models import DeleteFileResponse, FileCreateRequest, FileRecord
 
-QUOTA = 104_857_600  # 100 MB in bytes
+QUOTA = 104_857_6  # 100 MB in bytes
 
 router = APIRouter()
 

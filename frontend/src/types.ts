@@ -1,4 +1,4 @@
-export const QUOTA = 104_857_600; // 100 MB in bytes
+export const QUOTA = 104_857_6; // 100 MB in bytes
 
 export interface FileRecord {
   id: string;

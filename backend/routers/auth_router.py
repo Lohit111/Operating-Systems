@@ -5,8 +5,8 @@ import bcrypt
 from fastapi import APIRouter, HTTPException
 from pymongo.errors import DuplicateKeyError
 
-from backend.database import get_users_collection
-from backend.models import AuthRequest, AuthResponse
+from database import get_users_collection
+from models import AuthRequest, AuthResponse
 
 router = APIRouter()
 

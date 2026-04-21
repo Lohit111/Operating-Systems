@@ -147,6 +147,14 @@ export default function Dashboard({ uid, email, initialLastHead }: Props) {
     setCurrentPath(path.startsWith("/") ? path : `/${path}`);
   }, []);
 
+  const handleBack = useCallback(() => {
+    setCurrentPath((prev) => {
+      if (prev === "/") return "/";
+      const parent = prev.substring(0, prev.lastIndexOf("/")) || "/";
+      return parent;
+    });
+  }, []);
+
   const panelStyle = {
     background: "#161b22",
     border: "1px solid #30363d",
@@ -255,6 +263,7 @@ export default function Dashboard({ uid, email, initialLastHead }: Props) {
             onDeleteFile={handleDeleteFile}
             onAddFile={handleAddFile}
             onMkdir={handleMkdir}
+            onBack={handleBack}
           />
         </div>
 

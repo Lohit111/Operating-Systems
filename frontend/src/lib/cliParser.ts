@@ -2,7 +2,8 @@ export type ParsedCommand =
   | { type: 'open'; folder: string }
   | { type: 'del'; filename: string }
   | { type: 'touch'; filename: string; size: number }
-  | { type: 'mkdir'; folder: string };
+  | { type: 'mkdir'; folder: string }
+  | { type: 'back' };
 
 /**
  * Parses a CLI command string into a structured command object.
@@ -35,6 +36,10 @@ export function parseCommand(input: string): ParsedCommand | null {
 
   if (cmd === 'mkdir' && parts.length >= 2) {
     return { type: 'mkdir', folder: parts[1] };
+  }
+
+  if (cmd === 'back') {
+    return { type: 'back' };
   }
 
   return null;

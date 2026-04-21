@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { FileRecord, QUOTA, SchedulerResult } from "../types";
-import { runFCFS, runSSTF, runSCAN } from "../lib/scheduler";
+import {
+  runFCFS,
+  runSSTF,
+  runSCAN,
+  runLOOK,
+  runCSCAN,
+  runCLOOK,
+} from "../lib/scheduler";
 
 interface Props {
   files: FileRecord[];
@@ -9,7 +16,7 @@ interface Props {
   onUpdateLastHead: (newHead: number) => Promise<void>;
 }
 
-type Algorithm = "FCFS" | "SSTF" | "SCAN";
+type Algorithm = "FCFS" | "SSTF" | "SCAN" | "LOOK" | "C-SCAN" | "C-LOOK";
 
 const STEP_MS = 700; // ms per seek step
 
@@ -85,7 +92,12 @@ export default function DiskSchedulingPanel({
       let res: SchedulerResult;
       if (algorithm === "FCFS") res = runFCFS(positions, lastHead);
       else if (algorithm === "SSTF") res = runSSTF(positions, lastHead);
-      else res = runSCAN(positions, lastHead, QUOTA - 1);
+      else if (algorithm === "SCAN")
+        res = runSCAN(positions, lastHead, QUOTA - 1);
+      else if (algorithm === "LOOK") res = runLOOK(positions, lastHead);
+      else if (algorithm === "C-SCAN")
+        res = runCSCAN(positions, lastHead, QUOTA - 1);
+      else res = runCLOOK(positions, lastHead);
 
       setResult(res);
       setAnimStep(0);
@@ -168,8 +180,10 @@ export default function DiskSchedulingPanel({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ display: "flex", gap: 8 }}>
-          {(["FCFS", "SSTF", "SCAN"] as Algorithm[]).map((algo) => (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {(
+            ["FCFS", "SSTF", "SCAN", "LOOK", "C-SCAN", "C-LOOK"] as Algorithm[]
+          ).map((algo) => (
             <label
               key={algo}
               style={{
